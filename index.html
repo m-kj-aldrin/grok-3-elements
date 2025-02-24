@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script type="module" src="custom-select.js"></script>
+    <link rel="stylesheet" href="custom-select.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <span
+      >Lorem ipsum dolor, sit amet consectetur adipisicing elit. Amet facilis
+      incidunt ea, nihil voluptates ullam vel.</span
+    >
+    <custom-select open>
+      <custom-trigger>Select an option</custom-trigger>
+      <custom-group>
+        <custom-option value="option1">Option 1</custom-option>
+        <custom-option value="option2">Option 2</custom-option>
+        <custom-option value="option3" disabled>Option 3</custom-option>
+        <custom-option value="option4" disabled>Option 4</custom-option>
+        <custom-option value="option5">Option 5</custom-option>
+      </custom-group>
+    </custom-select>
+
+    <select name="" id="">
+      <option value="option1">Option 1</option>
+      <option value="option2" selected>Option 2</option>
+      <option value="option3" disabled>Option 3 (Disabled)</option>
+      <option value="option4">Option 4</option>
+    </select>
+
+    <script>
+      document.body.addEventListener("change", (e) => {
+        let detail = e.detail;
+        let value = detail?.value ?? "No details";
+      });
+    </script>
+  </body>
+</html>

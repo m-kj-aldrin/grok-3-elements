@@ -1,0 +1,51 @@
+custom-select {
+  display: inline-block;
+  position: relative;
+}
+
+custom-trigger {
+  display: inline-block;
+  /* background-color: #f0f0f0; */
+  cursor: pointer;
+  border: 1px solid #ccc;
+}
+
+:where(custom-trigger, custom-option):focus {
+  outline: 2px solid #0066cc;
+  background-color: #e0e0e0;
+}
+
+custom-group {
+  position: absolute;
+  display: none;
+  border: 1px solid #ccc;
+}
+
+custom-group[open] {
+  display: block;
+}
+
+custom-option {
+  white-space: nowrap;
+  /* padding: 8px; */
+  display: block;
+}
+
+custom-option[selected] {
+  background-color: #e0e0e0;
+}
+
+custom-option:hover:not([disabled]) {
+  background-color: #d0d0d0;
+}
+
+/* custom-option.focused {
+  background-color: #cce5ff;
+  outline: 2px solid #0066cc;
+} */
+
+custom-option[disabled] {
+  color: #888;
+  cursor: not-allowed;
+  background-color: #f0f0f0;
+}

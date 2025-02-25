@@ -3,7 +3,7 @@ import {
   CustomOption,
   CustomTrigger,
   CustomGroup,
-} from "./custom-select";
+} from "./Select/custom-select";
 
 declare global {
   interface HTMLElementTagNameMap {

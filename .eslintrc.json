@@ -1,0 +1,51 @@
+{
+  "env": {
+    "browser": true,
+    "es2022": true
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "rules": {
+    // General code style
+    "indent": ["error", 2],
+    "linebreak-style": ["error", "unix"],
+    "quotes": ["error", "double"],
+    "semi": ["error", "always"],
+    "no-unused-vars": ["warn"],
+    "no-console": ["warn"],
+    
+    // Custom element specific
+    "new-cap": ["error", { "capIsNewExceptions": ["customElements"] }],
+    "class-methods-use-this": ["off"],
+    
+    // Naming conventions
+    "camelcase": ["error", { "properties": "always" }],
+    
+    // Documentation
+    "valid-jsdoc": ["warn", {
+      "requireReturn": false,
+      "requireParamType": true,
+      "requireReturnType": true
+    }],
+    
+    // Best practices
+    "no-param-reassign": ["error"],
+    "prefer-const": ["error"],
+    "no-var": ["error"],
+    "prefer-rest-params": ["error"],
+    "prefer-spread": ["error"],
+    "prefer-template": ["error"],
+    "no-else-return": ["error"],
+    
+    // Private methods/fields
+    "no-underscore-dangle": ["error", { 
+      "allowAfterThis": false,
+      "enforceInMethodNames": true
+    }]
+  }
+} 

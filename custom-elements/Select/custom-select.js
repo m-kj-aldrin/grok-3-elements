@@ -1,5 +1,5 @@
-import { wait } from "./dom-utility/timing.js";
-import { getSiblingOfSameTag } from "./dom-utility/traversal.js";
+import { wait } from "../../dom-utility/timing.js";
+import { getSiblingOfSameTag } from "../../dom-utility/traversal.js";
 
 /**
  * @typedef {["open"]} ObservedAttributes
@@ -43,6 +43,10 @@ class CustomSelect extends HTMLElement {
     if (name === "open") {
       this.#updateUI();
     }
+  }
+  
+  _bla() {
+    return 1;
   }
 
   #handleFocusIn(event) {

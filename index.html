@@ -14,21 +14,24 @@
       >Lorem ipsum dolor, sit amet consectetur adipisicing elit. Amet facilis
       incidunt ea, nihil voluptates ullam vel.</span
     >
-    <custom-select open>
+    <custom-select>
       <custom-trigger>Select an option</custom-trigger>
       <custom-group>
         <custom-option value="option1">Option 1</custom-option>
         <custom-option value="option2">Option 2</custom-option>
-        <custom-option value="option3" disabled>Option 3</custom-option>
-        <custom-option value="option4" disabled>Option 4</custom-option>
-        <custom-option value="option5">Option 5</custom-option>
+        <custom-option value="option3">Option 3</custom-option>
+        <custom-option value="option4">Option 4</custom-option>
+        <custom-option value="option5" disabled>Option 5</custom-option>
+        <custom-option value="option6" disabled>Option 6</custom-option>
+        <custom-option value="option7">Option 7</custom-option>
       </custom-group>
+      <custom-icon><div>&blacktriangledown;</div></custom-icon>
     </custom-select>
 
     <select name="" id="">
       <option value="option1">Option 1</option>
       <option value="option2" selected>Option 2</option>
-      <option value="option3" disabled>Option 3 (Disabled)</option>
+      <option value="option3" disabled>Option 3</option>
       <option value="option4">Option 4</option>
     </select>
 
@@ -36,6 +39,9 @@
       document.body.addEventListener("change", (e) => {
         let detail = e.detail;
         let value = detail?.value ?? "No details";
+
+        console.log("Change value: ", value);
+        console.log("Change target: ", e.target);
       });
     </script>
   </body>

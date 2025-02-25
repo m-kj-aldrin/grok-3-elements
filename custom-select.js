@@ -1,92 +1,66 @@
+import { wait } from "./dom-utility/timing.js";
+import { getSiblingOfSameTag } from "./dom-utility/traversal.js";
+
 /**
- * Gets the sibling of the same tag name, looping around if needed.
- * @param {HTMLElement} element - The reference element.
- * @param {number} direction - Positive for next sibling, negative for previous.
- * @param {string} [test=""] - Optional CSS selector test.
- * @returns {HTMLElement | null}
+ * @typedef {["open"]} ObservedAttributes
  */
-function getSiblingOfSameTag(element, direction, test = "") {
-  const parent = element.parentElement;
-  if (!parent) return null; // Can't loop without a parent.
 
-  /** @type {HTMLElement} */
-  let sibling = element;
+const CUSTOM_OPTION_SELECTOR = "custom-option:not([disabled])";
 
-  while (true) {
-    /** @type {Element | null} */
-    let candidate =
-      direction > 0
-        ? sibling.nextElementSibling
-        : sibling.previousElementSibling;
-
-    // Wrap around if no candidate exists.
-    if (!candidate) {
-      candidate =
-        direction > 0 ? parent.firstElementChild : parent.lastElementChild;
-    }
-
-    if (!(candidate instanceof HTMLElement)) return null;
-
-    sibling = candidate;
-
-    // If we've looped back to the starting element, no valid sibling exists.
-    if (sibling === element) return null;
-
-    // Return if the sibling has the same tag name and passes the test (if provided).
-    if (
-      sibling.tagName === element.tagName &&
-      (!test || sibling.matches(test))
-    ) {
-      return sibling;
-    }
-  }
-}
-
+/**
+ * Custom select component implementing accessible dropdown functionality
+ */
 class CustomSelect extends HTMLElement {
-  #isOpen = false;
   #selectedItem = null;
   #focusedItem = null;
 
+  /**@type {ObservedAttributes} */
   static get observedAttributes() {
     return ["open"];
   }
 
   connectedCallback() {
-    this.addEventListener("click", this.#handleClick);
-    this.addEventListener("keydown", this.#handleKeydown);
+    this.addEventListener("click", this.#onClick);
+    this.addEventListener("keydown", this.#onKeydown);
+    this.addEventListener("focusout", this.#onFocusout);
+    this.addEventListener("focusin", this.#handleFocusIn);
+
+    this.#setupAccessibility();
     this.#initializeSelected();
-    this.#setupTrigger();
   }
 
   disconnectedCallback() {
-    this.removeEventListener("click", this.#handleClick);
-    this.removeEventListener("keydown", this.#handleKeydown);
+    this.removeEventListener("click", this.#onClick);
+    this.removeEventListener("keydown", this.#onKeydown);
+    this.removeEventListener("focusout", this.#onFocusout);
+    this.removeEventListener("focusin", this.#handleFocusIn);
   }
 
-  attributeChangedCallback(name, oldValue, newValue) {
+  /**
+   * @param {ObservedAttributes[number]} name
+   */
+  attributeChangedCallback(name) {
     if (name === "open") {
-      this.#isOpen = newValue !== null;
-      this.#updateDisplay();
-      if (this.#isOpen && this.#selectedItem) {
-        this.#focusItem(this.#selectedItem);
-      } else if (!this.#isOpen) {
-        this.#clearFocus();
-      }
-      this.#updateTabIndex();
+      this.#updateUI();
     }
   }
 
-  // Public methods
+  #handleFocusIn(event) {
+    if (event.target.closest(CUSTOM_OPTION_SELECTOR)) {
+      this.#focusedItem = event.target.closest(CUSTOM_OPTION_SELECTOR);
+    }
+  }
+
   open() {
-    this.setAttribute("open", "");
+    this.toggleAttribute("open", true);
   }
 
   close() {
-    this.removeAttribute("open");
+    this.toggleAttribute("open", false);
   }
 
   toggle() {
-    this.#isOpen ? this.close() : this.open();
+    this.toggleAttribute("open");
   }
 
   get selectedValue() {
@@ -95,140 +69,147 @@ class CustomSelect extends HTMLElement {
 
   set selectedValue(value) {
     const item = this.querySelector(
-      `custom-option[value="${value}"]:not([disabled])`
+      `${CUSTOM_OPTION_SELECTOR}[value="${value}"]`
     );
     if (item) {
       this.#setSelected(item);
     }
   }
 
-  // Private methods
-  #handleClick = (event) => {
+  #setupAccessibility() {
+    this.setAttribute("role", "combobox");
+    this.setAttribute("aria-expanded", "false");
+  }
+
+  #initializeSelected() {
+    const selected = this.querySelector(`${CUSTOM_OPTION_SELECTOR}[selected]`);
+    if (selected) {
+      this.#selectedItem = selected;
+      this.#updateTrigger();
+    }
+  }
+
+  #onClick(event) {
     const target = event.target;
-    if (target.closest("custom-trigger")) {
+    const trigger = target.closest("custom-trigger");
+    const option = target.closest(CUSTOM_OPTION_SELECTOR);
+
+    if (trigger) {
       this.toggle();
       return;
     }
-    const option = target.closest("custom-option:not([disabled])");
+
     if (option && this.contains(option) && !option.hasAttribute("selected")) {
       this.#setSelected(option);
       this.close();
     }
-  };
+  }
 
-  #handleKeydown = (event) => {
-    const target = event.target;
-    const trigger = target.closest("custom-trigger");
+  #onFocusout(event) {
+    if (!this.hasAttribute("open")) return;
 
-    if (
-      trigger &&
-      !this.#isOpen &&
-      (event.key === "Enter" || event.key === " ")
-    ) {
-      event.preventDefault();
-      this.open();
-      return;
-    }
-
-    const allOptions = [
-      ...this.querySelectorAll("custom-option:not([disabled],[selected])"),
-    ];
-    if (allOptions.length === 0) return;
-
-    if (!this.#isOpen) {
-      const currentElement = this.#selectedItem || allOptions[0]; // Fallback to first option if none selected
-      switch (event.key) {
-        case "ArrowDown":
-          event.preventDefault();
-          const next = getSiblingOfSameTag(
-            currentElement,
-            1,
-            ":not([disabled],[selected])"
-          );
-          if (next) this.#setSelected(next);
-          break;
-        case "ArrowUp":
-          event.preventDefault();
-          const prev = getSiblingOfSameTag(
-            currentElement,
-            -1,
-            ":not([disabled],[selected])"
-          );
-          if (prev) this.#setSelected(prev);
-          break;
-      }
-      return;
-    }
-
-    // Open state: both Tab/Shift+Tab and ArrowUp/ArrowDown cycle
-    const currentElement =
-      this.#focusedItem || this.#selectedItem || allOptions[0];
-    switch (event.key) {
-      case "ArrowDown":
-      case "Tab":
-        if (event.key === "Tab" && event.shiftKey) {
-          event.preventDefault();
-          const prev = getSiblingOfSameTag(
-            currentElement,
-            -1,
-            ":not([disabled],[selected])"
-          );
-          this.#focusItem(prev);
-        } else {
-          event.preventDefault();
-          const next = getSiblingOfSameTag(
-            currentElement,
-            1,
-            ":not([disabled],[selected])"
-          );
-          this.#focusItem(next);
-        }
-        break;
-      case "ArrowUp":
-        event.preventDefault();
-        const prev = getSiblingOfSameTag(
-          currentElement,
-          -1,
-          ":not([disabled],[selected])"
-        );
-        this.#focusItem(prev);
-        break;
-      case "Enter":
-      case " ":
-        event.preventDefault();
-        if (
-          this.#focusedItem &&
-          !this.#focusedItem.hasAttribute("disabled") &&
-          !this.#focusedItem.hasAttribute("selected")
-        ) {
-          this.#setSelected(this.#focusedItem);
-          this.close();
-        }
-        this.querySelector("custom-trigger")?.focus();
-        break;
-      case "Escape":
-        event.preventDefault();
+    wait().then(() => {
+      if (!this.contains(document.activeElement)) {
         this.close();
-        this.querySelector("custom-trigger")?.focus();
-        break;
-    }
-  };
+      }
+    });
+  }
 
-  #setupTrigger() {
-    const trigger = this.querySelector("custom-trigger");
-    if (trigger) {
-      trigger.setAttribute("role", "button");
-      trigger.setAttribute("tabindex", "0");
+  #onKeydown(event) {
+    if (this.hasAttribute("open")) {
+      this.#handleOpenKeydown(event);
+    } else {
+      this.#handleClosedKeydown(event);
     }
   }
 
-  #initializeSelected() {
-    const selected = this.querySelector(
-      "custom-option[selected]:not([disabled])"
+  #handleClosedKeydown(event) {
+    const trigger = event.target.closest("custom-trigger");
+
+    if (trigger) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        this.open();
+        return;
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        trigger.blur();
+        return;
+      }
+    }
+
+    if (["ArrowDown", "ArrowUp"].includes(event.key)) {
+      this.#handleArrowNavigation(event);
+    }
+  }
+
+  #handleOpenKeydown(event) {
+    switch (event.key) {
+      case "ArrowDown":
+      case "ArrowUp":
+        this.#handleArrowNavigation(event);
+        break;
+
+      case "Enter":
+      case " ":
+        event.preventDefault();
+        if (this.#focusedItem && !this.#focusedItem.hasAttribute("disabled")) {
+          this.#setSelected(this.#focusedItem);
+          this.close();
+        }
+        this.#focusTrigger();
+        break;
+
+      case "Escape":
+      case "Tab":
+        event.preventDefault();
+        this.close();
+        this.#focusTrigger();
+        break;
+    }
+  }
+
+  #handleArrowNavigation(event) {
+    event.preventDefault();
+    const currentElement = this.#getCurrentNavigationElement();
+    if (!currentElement) return;
+
+    const direction = event.key === "ArrowDown" ? 1 : -1;
+    const sibling = getSiblingOfSameTag(
+      currentElement,
+      direction,
+      ":not([disabled])"
     );
-    if (selected) {
-      this.#selectedItem = selected;
-      this.#updateTrigger();
+
+    if (!sibling) return;
+
+    if (this.hasAttribute("open")) {
+      this.#focusItem(sibling);
+    } else {
+      this.#setSelected(sibling);
+    }
+  }
+
+  #getCurrentNavigationElement() {
+    return this.hasAttribute("open")
+      ? this.#focusedItem ||
+          this.#selectedItem ||
+          this.querySelector(CUSTOM_OPTION_SELECTOR)
+      : this.#selectedItem || this.querySelector(CUSTOM_OPTION_SELECTOR);
+  }
+
+  #focusTrigger() {
+    this.querySelector("custom-trigger")?.focus();
+  }
+
+  #updateUI() {
+    const isOpen = this.hasAttribute("open");
+    this.setAttribute("aria-expanded", isOpen.toString());
+
+    if (isOpen) {
+      const itemToFocus =
+        this.#selectedItem || this.querySelector(CUSTOM_OPTION_SELECTOR);
+      this.#focusItem(itemToFocus);
     }
   }
 
@@ -238,83 +219,93 @@ class CustomSelect extends HTMLElement {
       this.#selectedItem.removeAttribute("aria-selected");
     }
 
+    let currentItem = this.#selectedItem;
     this.#selectedItem = item;
-    if (item && !item.hasAttribute("disabled")) {
+    if (item && !item.hasAttribute("disabled") && item !== currentItem) {
       item.setAttribute("selected", "");
       item.setAttribute("aria-selected", "true");
+
+      this.#updateTrigger();
       this.dispatchEvent(
         new CustomEvent("change", {
           bubbles: true,
-          detail: {
-            value: this.selectedValue,
-          },
+          detail: { value: this.selectedValue },
         })
       );
     }
-    this.#updateTrigger();
   }
 
   #updateTrigger() {
     const trigger = this.querySelector("custom-trigger");
     if (trigger && this.#selectedItem) {
       trigger.textContent = this.#selectedItem.textContent;
-    }
-  }
-
-  #updateDisplay() {
-    const group = this.querySelector("custom-group");
-    if (group) {
-      if (this.#isOpen) {
-        group.setAttribute("open", "");
-      } else {
-        group.removeAttribute("open");
-      }
+      trigger.setAttribute(
+        "aria-label",
+        `Selected: ${this.#selectedItem.textContent}`
+      );
     }
   }
 
   #focusItem(item) {
-    if (!item) return; // No valid item to focus
-    if (this.#focusedItem) {
-      this.#focusedItem.classList.remove("focused");
-    }
-    this.#focusedItem = item;
-    if (item && !item.hasAttribute("disabled")) {
-      item.classList.add("focused");
-      item.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      item.focus();
-    }
-  }
+    if (!item) return;
+    if (item.hasAttribute("disabled")) return;
 
-  #clearFocus() {
-    if (this.#focusedItem) {
-      this.#focusedItem.classList.remove("focused");
-      this.#focusedItem = null;
-    }
-  }
-
-  #updateTabIndex() {
-    const options = this.querySelectorAll("custom-option");
-    options.forEach((option) => {
-      option.setAttribute("tabindex", this.#isOpen ? "0" : "-1");
-    });
+    item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    item.focus();
   }
 }
 
+/**
+ * Represents an option in the custom select
+ */
 class CustomOption extends HTMLElement {
   connectedCallback() {
     if (!this.hasAttribute("value")) {
       this.setAttribute("value", this.textContent.trim());
     }
+
     this.setAttribute("role", "option");
     this.setAttribute("tabindex", "-1");
   }
 }
 
-class CustomTrigger extends HTMLElement {}
+/**
+ * Represents the trigger button for the custom select
+ */
+class CustomTrigger extends HTMLElement {
+  connectedCallback() {
+    this.setAttribute("role", "button");
+    this.setAttribute("tabindex", "0");
+    this.setAttribute("aria-haspopup", "listbox");
+  }
+}
 
-class CustomGroup extends HTMLElement {}
+/**
+ * Represents the option group container
+ */
+class CustomGroup extends HTMLElement {
+  connectedCallback() {
+    this.setAttribute("role", "listbox");
+  }
+}
 
+/**
+ * Represents an icon container for the custom select
+ * This element is always visible regardless of selection state
+ */
+class CustomIcon extends HTMLElement {
+  connectedCallback() {
+    this.setAttribute("role", "presentation");
+    this.setAttribute("tabindex", "-1");
+    this.setAttribute("aria-hidden", "true");
+  }
+}
+
+// Register custom elements
 customElements.define("custom-select", CustomSelect);
 customElements.define("custom-option", CustomOption);
 customElements.define("custom-trigger", CustomTrigger);
 customElements.define("custom-group", CustomGroup);
+customElements.define("custom-icon", CustomIcon);
+
+export { CustomSelect, CustomOption, CustomTrigger, CustomGroup, CustomIcon };

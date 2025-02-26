@@ -1,0 +1,20 @@
+/* Styles for the input-slider-thumb component */
+input-slider-thumb {
+  position: absolute;
+  top: 50%;
+  height: 16px;
+  width: 16px;
+  background-color: #4d90fe;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+input-slider:focus input-slider-thumb {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 0 4px rgba(77, 144, 254, 0.5);
+}
+
+input-slider:hover input-slider-thumb {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+} 

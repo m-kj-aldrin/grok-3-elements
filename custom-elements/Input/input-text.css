@@ -1,0 +1,37 @@
+/* Styles for the input-text component */
+input-text {
+  display: block;
+  width: 100%;
+}
+
+input-text input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #333;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+input-text input:focus {
+  outline: none;
+  border-color: #4d90fe;
+  box-shadow: 0 0 0 2px rgba(77, 144, 254, 0.25);
+}
+
+input-text[disabled] input {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+input-text[readonly] input {
+  background-color: #f9f9f9;
+}
+
+/* Error state */
+input-root:invalid input-text input {
+  border-color: #dc3545;
+} 

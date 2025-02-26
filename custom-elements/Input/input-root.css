@@ -1,0 +1,17 @@
+/* Styles for the input-root component */
+input-root {
+  display: block;
+  position: relative;
+  width: 100%;
+  margin: 0.5rem 0;
+  font-family: inherit;
+}
+
+input-root[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+input-root * {
+  box-sizing: border-box;
+} 

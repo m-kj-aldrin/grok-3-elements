@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Input Components Demo</title>
+  
+  <!-- Import the custom elements CSS -->
+  <link rel="stylesheet" href="custom-elements/Input/index.css">
+  
+  <!-- Import the custom elements JavaScript -->
+  <script type="module">
+    import { 
+      InputRoot, 
+      InputText, 
+      InputSlider, 
+      InputSliderTrack, 
+      InputSliderThumb 
+    } from './custom-elements/Input/index.js';
+  </script>
+  
+  <style>
+    /* General styles */
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 2rem;
+      color: #333;
+    }
+    
+    h1 {
+      margin-bottom: 2rem;
+      color: #2c3e50;
+    }
+    
+    h2 {
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: #3498db;
+    }
+    
+    .input-demo {
+      margin-bottom: 2rem;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+
+    /* Input Root styles */
+    input-root {
+      display: block;
+      position: relative;
+      width: 100%;
+      margin: 0.5rem 0;
+      font-family: inherit;
+    }
+    
+    input-root[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    /* Input Text styles */
+    input-text {
+      display: block;
+      width: 100%;
+    }
+    
+    input-text input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      color: #333;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    
+    input-text input:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25);
+    }
+    
+    input-text[disabled] input {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
+    }
+    
+    input-text[readonly] input {
+      background-color: #f9f9f9;
+    }
+    
+    /* Slider styles */
+    input-slider {
+      display: block;
+      position: relative;
+      width: 100%;
+      height: 40px;
+      padding: 0.5rem 0;
+      cursor: pointer;
+    }
+    
+    input-slider:focus {
+      outline: none;
+    }
+    
+    input-slider[disabled] {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    
+    input-slider-track {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background-color: #e0e0e0;
+      border-radius: 2px;
+      transform: translateY(-50%);
+      overflow: hidden;
+    }
+    
+    input-slider-track::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: var(--filled-percentage, 0%);
+      background-color: #3498db;
+      border-radius: 2px;
+    }
+    
+    input-slider-thumb {
+      position: absolute;
+      top: 50%;
+      height: 16px;
+      width: 16px;
+      background-color: #3498db;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      transition: box-shadow 0.15s ease-in-out;
+    }
+    
+    input-slider:focus input-slider-track {
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25);
+    }
+    
+    input-slider:focus input-slider-thumb {
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 0 4px rgba(52, 152, 219, 0.5);
+    }
+    
+    input-slider:hover input-slider-thumb {
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Value display */
+    .value-display {
+      margin-top: 0.5rem;
+      font-family: monospace;
+      color: #3498db;
+    }
+    
+    /* Form styles */
+    form {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #f9f9f9;
+    }
+    
+    button {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    
+    button:hover {
+      background-color: #2980b9;
+    }
+    
+    .form-result {
+      margin-top: 1rem;
+      padding: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #f5f5f5;
+      display: none;
+    }
+    
+    .form-result pre {
+      margin: 0;
+      white-space: pre-wrap;
+    }
+    
+    .error {
+      color: #e74c3c;
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+    
+    input-root:invalid {
+      border-left: 3px solid #e74c3c;
+      padding-left: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Custom Input Components</h1>
+  
+  <div class="input-demo">
+    <h2>Text Input</h2>
+    <label for="username">Username:</label>
+    <input-root id="text-input" type="text" name="username" required>
+      <input-text placeholder="Enter your username" maxlength="50"></input-text>
+    </input-root>
+    <div class="value-display">Current value: <span id="text-value"></span></div>
+  </div>
+  
+  <div class="input-demo">
+    <h2>Slider Input</h2>
+    <label for="volume">Volume:</label>
+    <input-root id="slider-input" type="slider" name="volume" value="50">
+      <input-slider min="0" max="100" step="1">
+        <input-slider-track></input-slider-track>
+        <input-slider-thumb></input-slider-thumb>
+      </input-slider>
+    </input-root>
+    <div class="value-display">Current value: <span id="slider-value">50</span></div>
+  </div>
+  
+  <div class="input-demo">
+    <h2>Disabled Text Input</h2>
+    <label for="disabled-input">Disabled:</label>
+    <input-root type="text" name="disabled-input" disabled>
+      <input-text placeholder="This input is disabled"></input-text>
+    </input-root>
+  </div>
+  
+  <div class="input-demo">
+    <h2>Readonly Text Input</h2>
+    <label for="readonly-input">Readonly:</label>
+    <input-root type="text" name="readonly-input" value="Readonly value" readonly>
+      <input-text placeholder="This input is readonly"></input-text>
+    </input-root>
+  </div>
+
+  <h2>Form Integration Test</h2>
+  <form id="test-form">
+    <div class="input-demo">
+      <label for="form-name">Name (required):</label>
+      <input-root id="form-name" type="text" name="name" required form="test-form">
+        <input-text placeholder="Enter your name"></input-text>
+      </input-root>
+      <div class="error" id="form-name-error"></div>
+    </div>
+    
+    <div class="input-demo">
+      <label for="form-age">Age (1-120):</label>
+      <input-root id="form-age" type="slider" name="age" value="30" form="test-form">
+        <input-slider min="1" max="120" step="1">
+          <input-slider-track></input-slider-track>
+          <input-slider-thumb></input-slider-thumb>
+        </input-slider>
+      </input-root>
+      <div class="value-display">Age: <span id="form-age-value">30</span></div>
+    </div>
+    
+    <button type="submit">Submit Form</button>
+  </form>
+  
+  <div class="form-result" id="form-result">
+    <h3>Form Submission Result:</h3>
+    <pre id="form-data"></pre>
+  </div>
+
+  <script>
+    // Demo functionality - update value displays
+    document.addEventListener('DOMContentLoaded', () => {
+      const textInput = document.getElementById('text-input');
+      const sliderInput = document.getElementById('slider-input');
+      const textValueDisplay = document.getElementById('text-value');
+      const sliderValueDisplay = document.getElementById('slider-value');
+      const formAgeInput = document.getElementById('form-age');
+      const formAgeValue = document.getElementById('form-age-value');
+      const formNameInput = document.getElementById('form-name');
+      const formNameError = document.getElementById('form-name-error');
+      const testForm = document.getElementById('test-form');
+      const formResult = document.getElementById('form-result');
+      const formData = document.getElementById('form-data');
+
+      // Initialize the value displays with a slight delay to ensure components are fully loaded
+      setTimeout(() => {
+        textValueDisplay.textContent = textInput.value;
+        sliderValueDisplay.textContent = sliderInput.value;
+        formAgeValue.textContent = formAgeInput.value;
+        
+        // Force re-render of sliders
+        const sliders = document.querySelectorAll('input-slider');
+        sliders.forEach(slider => {
+          const value = slider.getAttribute('value');
+          if (value) {
+            slider.removeAttribute('value');
+            slider.setAttribute('value', value);
+          }
+        });
+      }, 50);
+
+      // Add event listeners to update the value displays
+      textInput.addEventListener('input', () => {
+        textValueDisplay.textContent = textInput.value;
+      });
+
+      sliderInput.addEventListener('input', () => {
+        sliderValueDisplay.textContent = sliderInput.value;
+      });
+      
+      formAgeInput.addEventListener('input', () => {
+        formAgeValue.textContent = formAgeInput.value;
+      });
+      
+      // Validate form inputs
+      formNameInput.addEventListener('input', () => {
+        if (formNameInput.value.trim() === '') {
+          formNameError.textContent = 'Name is required';
+        } else {
+          formNameError.textContent = '';
+        }
+      });
+      
+      // Form submission
+      testForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        
+        // Basic form validation
+        if (formNameInput.value.trim() === '') {
+          formNameError.textContent = 'Name is required';
+          return;
+        }
+        
+        // Collect form data
+        const formValues = {
+          name: formNameInput.value,
+          age: formAgeInput.value
+        };
+        
+        // Display form data
+        formResult.style.display = 'block';
+        formData.textContent = JSON.stringify(formValues, null, 2);
+      });
+    });
+  </script>
+</body>
+</html> 

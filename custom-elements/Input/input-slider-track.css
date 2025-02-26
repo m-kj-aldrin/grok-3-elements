@@ -1,0 +1,23 @@
+/* Styles for the input-slider-track component */
+input-slider-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  overflow: hidden;
+}
+
+input-slider-track::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: var(--filled-percentage, 0%);
+  background-color: #4d90fe;
+  border-radius: 2px;
+} 

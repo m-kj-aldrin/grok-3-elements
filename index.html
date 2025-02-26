@@ -6,9 +6,18 @@
       src="custom-elements/Select/custom-select.js"
     ></script>
     <link rel="stylesheet" href="custom-elements/Select/custom-select.css" />
+    <script
+      type="module"
+      src="custom-elements/Input/index.js"
+    ></script>
+    <link rel="stylesheet" href="custom-elements/Input/index.css" />
     <link rel="stylesheet" href="style.css" />
+    <title>Custom Elements Demo</title>
   </head>
   <body>
+    <h1>Custom Elements Demo</h1>
+    
+    <h2>Custom Select</h2>
     <span
       >Lorem ipsum dolor, sit amet consectetur adipisicing elit. Amet facilis
       incidunt ea, nihil voluptates ullam vel.</span
@@ -34,6 +43,48 @@
       <option value="option4">Option 4</option>
     </select>
 
+    <h2>Custom Input Components</h2>
+    
+    <h3>Text Input</h3>
+    <div class="input-demo">
+      <label for="username">Username:</label>
+      <input-root type="text" name="username" required>
+        <input-text placeholder="Enter your username" maxlength="50"></input-text>
+      </input-root>
+    </div>
+
+    <h3>Number Input</h3>
+    <div class="input-demo">
+      <label for="quantity">Quantity:</label>
+      <input-root type="number" name="quantity" value="1">
+        <input-text placeholder="Quantity" maxlength="3"></input-text>
+      </input-root>
+    </div>
+
+    <h3>Slider Input</h3>
+    <div class="input-demo">
+      <label for="volume">Volume:</label>
+      <input-root type="slider" name="volume" value="50">
+        <input-slider min="0" max="100" step="1"></input-slider>
+      </input-root>
+    </div>
+
+    <h3>Disabled State</h3>
+    <div class="input-demo">
+      <label for="disabled-input">Disabled:</label>
+      <input-root type="text" name="disabled-input" disabled>
+        <input-text placeholder="This input is disabled"></input-text>
+      </input-root>
+    </div>
+
+    <h3>Readonly State</h3>
+    <div class="input-demo">
+      <label for="readonly-input">Readonly:</label>
+      <input-root type="text" name="readonly-input" value="Readonly value" readonly>
+        <input-text placeholder="This input is readonly"></input-text>
+      </input-root>
+    </div>
+
     <script>
       document.body.addEventListener("change", (e) => {
         let detail = e.detail;
@@ -41,6 +92,13 @@
 
         console.log("Change value: ", value);
         console.log("Change target: ", e.target);
+      });
+      
+      document.body.addEventListener("input", (e) => {
+        if (e.target.tagName.toLowerCase().startsWith('input-')) {
+          console.log("Input value: ", e.target.value);
+          console.log("Input target: ", e.target);
+        }
       });
     </script>
   </body>

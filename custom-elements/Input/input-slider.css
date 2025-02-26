@@ -1,0 +1,26 @@
+/* Styles for the input-slider component */
+input-slider {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 40px;
+  padding: 0.5rem 0;
+  cursor: pointer;
+}
+
+input-slider:focus {
+  outline: none;
+}
+
+input-slider:focus input-slider-track {
+  box-shadow: 0 0 0 2px rgba(77, 144, 254, 0.25);
+}
+
+input-slider[disabled] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+input-slider[readonly] {
+  pointer-events: none;
+} 

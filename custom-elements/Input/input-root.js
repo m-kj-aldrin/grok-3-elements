@@ -212,7 +212,7 @@ export class InputRoot extends HTMLElement {
     
     // Update each interface component with the current state
     interfaceComponents.forEach(component => {
-      // Set value
+      // Set value - only if different to prevent infinite loops
       if (component.getAttribute('value') !== this.#value) {
         component.setAttribute('value', this.#value);
         

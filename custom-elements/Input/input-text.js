@@ -7,8 +7,6 @@
  * Communicates with InputRoot through internal events
  */
 export class InputText extends HTMLElement {
-  #inputElement = null;
-
   /**
    * Attributes observed by this component 
    * Combines InputText specific attributes and inherited attributes from InputRoot
@@ -25,32 +23,29 @@ export class InputText extends HTMLElement {
 
   constructor() {
     super();
-    this.#createInputElement();
+    // Set up the element itself for editing
+    this.contentEditable = 'true';
+    this.spellcheck = false;
+    
+    // Set up event listeners directly on the element
+    this.addEventListener('input', this.#handleInput.bind(this));
+    this.addEventListener('focus', this.#handleFocus.bind(this));
+    this.addEventListener('blur', this.#handleBlur.bind(this));
+    this.addEventListener('keydown', this.#handleKeyDown.bind(this));
   }
 
   connectedCallback() {
-    // Append the input element if not already in the DOM
-    if (!this.contains(this.#inputElement)) {
-      this.appendChild(this.#inputElement);
-    }
-
     // Set initial state
-    this.#updateInputState();
+    this.#updateState();
     
     // Set accessibility attributes
     this.setAttribute('role', 'textbox');
+    this.setAttribute('aria-multiline', 'false');
     
     // Make component focusable
     if (!this.hasAttribute('tabindex')) {
       this.setAttribute('tabindex', '0');
     }
-    
-    // Forward focus to the input element
-    this.addEventListener('focus', () => {
-      if (this.#inputElement && !this.hasAttribute('disabled')) {
-        this.#inputElement.focus();
-      }
-    });
   }
 
   /**
@@ -59,42 +54,53 @@ export class InputText extends HTMLElement {
    * @param {string} newValue - The new value of the attribute
    */
   attributeChangedCallback(name, oldValue, newValue) {
-    if (oldValue === newValue || !this.#inputElement) return;
+    if (oldValue === newValue) return;
 
     switch (name) {
       case 'value':
-        if (this.#inputElement.value !== newValue) {
-          this.#inputElement.value = newValue || '';
+        // Only update the text content if it's different from the current value
+        // to prevent loops with the input event
+        if (this.textContent !== newValue) {
+          this.textContent = newValue || '';
         }
         break;
       case 'placeholder':
-        this.#inputElement.placeholder = newValue || '';
+        if (newValue) {
+          this.dataset.placeholder = newValue;
+        } else {
+          delete this.dataset.placeholder;
+        }
         break;
       case 'maxlength':
         if (newValue) {
-          this.#inputElement.maxLength = newValue;
+          this.dataset.maxlength = newValue;
+          // If current content exceeds maxlength, truncate it
+          if (this.textContent.length > parseInt(newValue, 10)) {
+            this.textContent = this.textContent.substring(0, parseInt(newValue, 10));
+            this.#setCursorAtEnd();
+          }
         } else {
-          this.#inputElement.removeAttribute('maxlength');
+          delete this.dataset.maxlength;
         }
         break;
       case 'minlength':
         if (newValue) {
-          this.#inputElement.minLength = newValue;
+          this.dataset.minlength = newValue;
         } else {
-          this.#inputElement.removeAttribute('minlength');
+          delete this.dataset.minlength;
         }
         break;
       case 'pattern':
         if (newValue) {
-          this.#inputElement.pattern = newValue;
+          this.dataset.pattern = newValue;
         } else {
-          this.#inputElement.removeAttribute('pattern');
+          delete this.dataset.pattern;
         }
         break;
       case 'disabled':
       case 'readonly':
       case 'required':
-        this.#updateInputState();
+        this.#updateState();
         break;
     }
   }
@@ -117,71 +123,52 @@ export class InputText extends HTMLElement {
   }
 
   /**
-   * Creates the internal input element and sets up event listeners
+   * Updates the element state based on attributes
    */
-  #createInputElement() {
-    this.#inputElement = document.createElement('input');
-    this.#inputElement.type = 'text';
+  #updateState() {
+    // Set editable state based on disabled and readonly attributes
+    const isDisabled = this.hasAttribute('disabled');
+    const isReadonly = this.hasAttribute('readonly');
+    this.contentEditable = (!isDisabled && !isReadonly).toString();
     
-    // Add event listeners for input value changes
-    this.#inputElement.addEventListener('input', this.#handleInput.bind(this));
-    this.#inputElement.addEventListener('focus', this.#handleFocus.bind(this));
-    this.#inputElement.addEventListener('blur', this.#handleBlur.bind(this));
-    
-    // Forward key events to the parent
-    this.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === 'Tab') {
-        this.#inputElement.dispatchEvent(new KeyboardEvent('keydown', event));
-      }
-    });
-  }
-
-  /**
-   * Updates the input element state based on attributes
-   */
-  #updateInputState() {
-    if (!this.#inputElement) return;
-
-    // Set disabled state
-    this.#inputElement.disabled = this.hasAttribute('disabled');
-    
-    // Set readonly state
-    this.#inputElement.readOnly = this.hasAttribute('readonly');
-    
-    // Set required state
-    this.#inputElement.required = this.hasAttribute('required');
+    // Set placeholder via data attribute
+    const placeholder = this.getAttribute('placeholder');
+    if (placeholder) {
+      this.dataset.placeholder = placeholder;
+    } else {
+      delete this.dataset.placeholder;
+    }
     
     // Set value
-    this.#inputElement.value = this.getAttribute('value') || '';
+    this.textContent = this.getAttribute('value') || '';
     
-    // Set placeholder
-    this.#inputElement.placeholder = this.getAttribute('placeholder') || '';
-    
-    // Set maxlength
-    const maxlength = this.getAttribute('maxlength');
-    if (maxlength) {
-      this.#inputElement.maxLength = maxlength;
-    }
-    
-    // Set minlength
-    const minlength = this.getAttribute('minlength');
-    if (minlength) {
-      this.#inputElement.minLength = minlength;
-    }
-    
-    // Set pattern
-    const pattern = this.getAttribute('pattern');
-    if (pattern) {
-      this.#inputElement.pattern = pattern;
-    }
+    // Update ARIA attributes
+    this.setAttribute('aria-disabled', String(isDisabled));
+    this.setAttribute('aria-readonly', String(isReadonly));
+    this.setAttribute('aria-required', String(this.hasAttribute('required')));
   }
-
+  
   /**
    * Handles input events and dispatches internal change events
    * @param {Event} event - The input event
    */
   #handleInput(event) {
-    const value = this.#inputElement.value;
+    let value = this.textContent;
+    
+    // Implement maxlength constraint
+    const maxlength = this.getAttribute('maxlength');
+    if (maxlength && value.length > parseInt(maxlength, 10)) {
+      // Truncate the content if it exceeds maxlength
+      value = value.substring(0, parseInt(maxlength, 10));
+      this.textContent = value;
+      // Position cursor at the end
+      this.#setCursorAtEnd();
+    }
+    
+    // Don't update if the value is the same to prevent loops
+    if (value === this.getAttribute('value')) {
+      return;
+    }
     
     // Update the value attribute
     this.setAttribute('value', value);
@@ -199,6 +186,11 @@ export class InputText extends HTMLElement {
    * @param {FocusEvent} event - The focus event
    */
   #handleFocus(event) {
+    if (this.hasAttribute('disabled')) {
+      this.blur();
+      return;
+    }
+    
     this.dispatchEvent(new CustomEvent('_input-internal-focus', {
       bubbles: true,
       composed: true,
@@ -211,11 +203,70 @@ export class InputText extends HTMLElement {
    * @param {FocusEvent} event - The blur event
    */
   #handleBlur(event) {
+    // Validate the content against pattern
+    const pattern = this.getAttribute('pattern');
+    if (pattern) {
+      const regex = new RegExp(pattern);
+      const value = this.textContent;
+      if (value && !regex.test(value)) {
+        // If validation fails, add an invalid attribute
+        this.setAttribute('aria-invalid', 'true');
+      } else {
+        this.removeAttribute('aria-invalid');
+      }
+    }
+    
     this.dispatchEvent(new CustomEvent('_input-internal-blur', {
       bubbles: true,
       composed: true,
       detail: { target: this }
     }));
+  }
+  
+  /**
+   * Handles keyboard events
+   * @param {KeyboardEvent} event - The keyboard event
+   */
+  #handleKeyDown(event) {
+    // If disabled or readonly, prevent input
+    if (this.hasAttribute('disabled') || this.hasAttribute('readonly')) {
+      event.preventDefault();
+      return;
+    }
+    
+    // Handle Enter key (prevent default line break and dispatch event)
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      // Dispatch a special event to simulate form submission
+      this.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        composed: true
+      }));
+      return;
+    }
+    
+    // Check maxlength before allowing more input (except for delete/backspace/navigation keys)
+    const maxlength = this.getAttribute('maxlength');
+    if (maxlength && 
+        this.textContent.length >= parseInt(maxlength, 10) && 
+        !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) &&
+        !event.ctrlKey && 
+        !event.metaKey) {
+      event.preventDefault();
+    }
+  }
+  
+  /**
+   * Sets the cursor at the end of the text content
+   */
+  #setCursorAtEnd() {
+    const range = document.createRange();
+    const selection = window.getSelection();
+    range.selectNodeContents(this);
+    range.collapse(false); // false means collapse to end
+    selection.removeAllRanges();
+    selection.addRange(range);
   }
 }
 
